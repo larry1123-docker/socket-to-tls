@@ -3,11 +3,11 @@ FROM alpine:3.4
 
 MAINTAINER Larry1123 larry1123@larry1123.net
 
-RUN apk add --no-cache socat
+# add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
+# RUN /usr/sbin/groupadd -r socat && /usr/sbin/useradd -r -g socat socat
+RUN addgroup socat && adduser -s /bin/bash -D -G socat socat
 
-RUN groupadd -g 1000 socat && \
-    useradd -g socat -u 1000 -r -M socat && \
-    mkdir -p /opt/socat /usr/src/socat
+RUN apk add --no-cache socat
 
 COPY socat-daemon /usr/local/bin/
 COPY socat-daemon.conf /opt/socat/
