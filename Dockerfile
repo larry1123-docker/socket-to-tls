@@ -19,6 +19,6 @@ VOLUME /opt/socat/.ssh/
 
 HEALTHCHECK --timeout=3s CMD socat-daemon status
 
-ENTRYPOINT ['socat-deamon']
+ENTRYPOINT ['/usr/local/bin/socat-daemon']
 
 CMD socat-deamon start
