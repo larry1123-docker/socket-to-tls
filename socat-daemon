@@ -1,0 +1,94 @@
+#! /bin/sh
+
+# Load settings
+. /opt/socat/socat-daemon.conf
+
+PORT="4433"
+
+NAME="socat-daemon"
+
+PIDFILE="/opt/socat/$NAME.pid"
+LOGFILE="/opt/socat/$NAME.log"
+LOCKFILE="/opt/socat/$NAME.lck"
+OPTS="-d -d -d -lf $LOGFILE -L $LOCKFILE"
+INOPTS="fork,setgid=socat,setuid=socat"
+
+SOCAT="/usr/bin/socat"
+SCOKET="/opt/socat/socket.socket"
+
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+test -x $SOCAT  || exit 1
+test -S $SOCKET || exit 1
+
+ARGS="$OPTS openssl-listen:$PORT,reuseaddr,$CERTOPTS,$INOPTS UNIX-CLIENT:$SOCKET"
+
+start_socat() {
+	start-stop-daemon --oknodo --quiet --start \
+		--pidfile $PIDFILE \
+		--background --make-pidfile \
+		--exec $SOCAT -- $ARGS < /dev/null
+}
+
+stop_socat() {
+	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE --exec $SOCAT
+	rm -f $PIDFILE
+}
+
+start () {
+	start_socat
+	return $?
+}
+
+stop () {
+	for PID in `ls $PIDFILE 2> /dev/null`; do
+		NAME=`echo $PID | cut -c16-`
+		NAME=${NAME%%.pid}
+		stop_socat
+	done
+}
+
+
+case "$1" in
+	start)
+		log_daemon_msg "Starting socket to tls proxy" "$NAME"
+		if start ; then
+			log_end_msg $?
+		else
+			log_end_msg $?
+		fi
+		;;
+	stop)
+		log_daemon_msg "Stopping socket to tls proxy" "$NAME"
+		if stop ; then
+			log_end_msg $?
+		else
+			log_end_msg $?
+		fi
+		;;
+	restart|reload|force-reload)
+		log_daemon_msg "Reloading socket to tls proxy" "$NAME"
+		stop
+		if start ; then
+			log_end_msg $?
+		else
+			log_end_msg $?
+		fi
+		;;
+	status)
+		if [ -f "$PIDFILE" ]; then
+			echo "$NAME is running on port $PORT."
+			exit 0
+		else
+			echo "$Name is NOT running."
+			exit 1
+		fi
+		;;
+	*)
+		log_failure_msg "Usage: $PROGRAM {start|stop|restart|status}"
+		exit 3
+		;;
+esac
+
+exit 0
